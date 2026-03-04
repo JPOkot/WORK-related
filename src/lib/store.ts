@@ -279,6 +279,35 @@ export function useAppStore() {
     );
   }, []);
 
+  // ---- Bulk import users (from Excel upload) ----
+  // Skips rows whose email already exists; returns count of imported rows.
+  const bulkImportUsers = useCallback(
+    (rows: Array<{ fullName: string; email: string; role: UserRole; department: string; status: "active" | "inactive" }>) => {
+      let imported = 0;
+      setUsers((prev) => {
+        const existingEmails = new Set(prev.map((u) => u.email.toLowerCase()));
+        const newUsers: User[] = [];
+        rows.forEach((row) => {
+          if (!existingEmails.has(row.email.toLowerCase())) {
+            newUsers.push({
+              userId: `u_import_${Date.now()}_${imported}`,
+              fullName: row.fullName,
+              email: row.email,
+              role: row.role,
+              department: row.department,
+              status: row.status,
+            });
+            existingEmails.add(row.email.toLowerCase());
+            imported++;
+          }
+        });
+        return [...prev, ...newUsers];
+      });
+      return imported;
+    },
+    []
+  );
+
   const unreadNotifications = notifications.filter((n) => !n.isRead).length;
 
   return {
@@ -302,5 +331,6 @@ export function useAppStore() {
     addUser,
     updateUser,
     toggleUserStatus,
+    bulkImportUsers,
   };
 }
