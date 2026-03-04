@@ -6,19 +6,21 @@ export type UserRole = "initiator" | "approver" | "admin" | "auditor";
 
 export type RequestStatus =
   | "draft"
+  | "pending_manager_interview"
   | "pending_level_1"
   | "pending_level_2"
   | "pending_level_3"
   | "pending_level_4"
   | "pending_level_5"
   | "completed"
-  | "rejected";
+  | "rejected"
+  | "overturned";
 
 export type ChecklistItemStatus = "pending" | "cleared" | "not_applicable";
 
 export type ApprovalDecision = "approved" | "rejected";
 
-export type ExitType = "staff_exit" | "vendor_offboarding" | "project_closure" | "change_closure";
+export type ExitType = "staff_exit";
 
 // ============================================================
 // Users
@@ -52,6 +54,12 @@ export interface ExitRequest {
   claimedBy?: string | null;
   /** Timestamp when the request was claimed */
   claimedAt?: string | null;
+  /** Line Manager assigned to conduct 1-on-1 interview */
+  lineManagerId?: string | null;
+  /** Date/time of the 1-on-1 meeting */
+  managerMeetingDate?: string | null;
+  /** Manager's decision after 1-on-1: proceed with exit or overturn (employee stays) */
+  managerDecision?: "overturned" | "proceed" | null;
 }
 
 // ============================================================

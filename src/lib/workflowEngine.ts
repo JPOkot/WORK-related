@@ -20,6 +20,7 @@ import { APPROVAL_LEVELS, CHECKLIST_ITEMS } from "./mockData";
 export function getStatusLabel(status: RequestStatus): string {
   const labels: Record<RequestStatus, string> = {
     draft: "Draft",
+    pending_manager_interview: "Pending – Manager 1-on-1",
     pending_level_1: "Pending – Line Manager",
     pending_level_2: "Pending – HR",
     pending_level_3: "Pending – IT",
@@ -27,6 +28,7 @@ export function getStatusLabel(status: RequestStatus): string {
     pending_level_5: "Pending – Final Admin",
     completed: "Completed",
     rejected: "Rejected",
+    overturned: "Overturned (Stayed)",
   };
   return labels[status] || status;
 }
@@ -37,6 +39,7 @@ export function getStatusLabel(status: RequestStatus): string {
 export function getStatusColor(status: RequestStatus): string {
   const colors: Record<RequestStatus, string> = {
     draft: "bg-gray-100 text-gray-700 border-gray-200",
+    pending_manager_interview: "bg-amber-50 text-amber-800 border-amber-200",
     pending_level_1: "bg-yellow-50 text-yellow-800 border-yellow-200",
     pending_level_2: "bg-orange-50 text-orange-800 border-orange-200",
     pending_level_3: "bg-blue-50 text-blue-800 border-blue-200",
@@ -44,6 +47,7 @@ export function getStatusColor(status: RequestStatus): string {
     pending_level_5: "bg-indigo-50 text-indigo-800 border-indigo-200",
     completed: "bg-green-50 text-green-800 border-green-200",
     rejected: "bg-red-50 text-red-800 border-red-200",
+    overturned: "bg-teal-50 text-teal-800 border-teal-200",
   };
   return colors[status] || "bg-gray-100 text-gray-700 border-gray-200";
 }
@@ -54,9 +58,6 @@ export function getStatusColor(status: RequestStatus): string {
 export function getExitTypeLabel(exitType: ExitType): string {
   const labels: Record<ExitType, string> = {
     staff_exit: "Staff Exit",
-    vendor_offboarding: "Vendor Offboarding",
-    project_closure: "Project Closure",
-    change_closure: "Change Closure",
   };
   return labels[exitType] || exitType;
 }
@@ -67,9 +68,6 @@ export function getExitTypeLabel(exitType: ExitType): string {
 export function getExitTypeColor(exitType: ExitType): string {
   const colors: Record<ExitType, string> = {
     staff_exit: "bg-blue-100 text-blue-800",
-    vendor_offboarding: "bg-purple-100 text-purple-800",
-    project_closure: "bg-teal-100 text-teal-800",
-    change_closure: "bg-orange-100 text-orange-800",
   };
   return colors[exitType] || "bg-gray-100 text-gray-800";
 }
@@ -175,8 +173,15 @@ export function daysSince(dateString: string): number {
  * Check if request is overdue based on SLA
  */
 export function isOverdue(request: ExitRequest): boolean {
-  if (request.status === "completed" || request.status === "rejected" || request.status === "draft") {
+  if (request.status === "completed" || request.status === "rejected" || request.status === "draft" || request.status === "overturned") {
     return false;
+  }
+  // Manager interview has different SLA logic
+  if (request.status === "pending_manager_interview") {
+    const level = APPROVAL_LEVELS.find((l) => l.sequenceNo === 1);
+    if (!level) return false;
+    const days = daysSince(request.initiatedDate);
+    return days > level.slaDays;
   }
   const level = getCurrentApprovalLevel(request.currentLevel);
   if (!level) return false;

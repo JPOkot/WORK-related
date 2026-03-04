@@ -14,24 +14,6 @@ const EXIT_TYPES: { value: ExitType; label: string; description: string; icon: s
     description: "Employee resignation, retirement, or termination",
     icon: "👤",
   },
-  {
-    value: "vendor_offboarding",
-    label: "Vendor Offboarding",
-    description: "Contractor or vendor contract termination",
-    icon: "🤝",
-  },
-  {
-    value: "project_closure",
-    label: "Project Closure",
-    description: "Formal closure of a completed or cancelled project",
-    icon: "📁",
-  },
-  {
-    value: "change_closure",
-    label: "Change Closure",
-    description: "Closing a change request after implementation",
-    icon: "🔄",
-  },
 ];
 
 export default function NewRequestPage() {
@@ -107,7 +89,7 @@ export default function NewRequestPage() {
               Request ID: <code className="bg-gray-100 px-1.5 py-0.5 rounded">{newRequestId}</code>
             </p>
             <p className="text-sm text-gray-600 mb-6">
-              The checklist has been auto-populated with {previewItems.length} items. Level 1 approver has been notified.
+              The checklist has been auto-populated with {previewItems.length} items. Manager has been notified for 1-on-1 meeting.
             </p>
             <div className="flex gap-3">
               <button
@@ -209,14 +191,13 @@ export default function NewRequestPage() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    {form.exitType === "vendor_offboarding" ? "Vendor ID" : form.exitType === "project_closure" || form.exitType === "change_closure" ? "Project/CR ID" : "Employee ID"}{" "}
-                    <span className="text-red-500">*</span>
+                    Employee ID <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="text"
                     value={form.employeeId}
                     onChange={(e) => setForm((f) => ({ ...f, employeeId: e.target.value }))}
-                    placeholder={form.exitType === "vendor_offboarding" ? "VND-001" : form.exitType === "project_closure" ? "PRJ-001" : "EMP-001"}
+                    placeholder="EMP-001"
                     className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 ${
                       errors.employeeId ? "border-red-300" : "border-gray-300"
                     }`}
@@ -226,8 +207,7 @@ export default function NewRequestPage() {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    {form.exitType === "vendor_offboarding" ? "Vendor Name" : form.exitType === "project_closure" || form.exitType === "change_closure" ? "Project/CR Name" : "Full Name"}{" "}
-                    <span className="text-red-500">*</span>
+                    Full Name <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="text"
@@ -395,12 +375,12 @@ export default function NewRequestPage() {
               <div className="bg-white rounded-xl border border-gray-200 p-6">
                 <h3 className="text-sm font-semibold text-gray-900 mb-3">Approval Flow</h3>
                 <div className="flex items-center gap-2 flex-wrap">
-                  {["Line Manager", "HR", "IT", "Finance", "Final Admin"].map((level, idx) => (
+                  {["Manager 1-on-1", "Line Manager", "HR", "IT", "Finance", "Final Admin"].map((level, idx) => (
                     <div key={level} className="flex items-center gap-2">
                       <div className={`px-3 py-1.5 rounded-lg text-xs font-medium ${idx === 0 ? "bg-blue-100 text-blue-700 border border-blue-200" : "bg-gray-100 text-gray-600"}`}>
                         {idx + 1}. {level}
                       </div>
-                      {idx < 4 && (
+                      {idx < 5 && (
                         <svg className="w-3 h-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                         </svg>

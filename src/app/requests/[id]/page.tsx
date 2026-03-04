@@ -75,6 +75,7 @@ export default function RequestDetailPage() {
   const currentLevelConfig = approvalLevels.find(
     (l) => l.levelId === `lvl${request.currentLevel}`
   );
+  
   const canClaim =
     !isClaimed &&
     currentLevelConfig?.approverIds.includes(currentUser.userId);
