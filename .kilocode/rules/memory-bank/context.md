@@ -18,6 +18,7 @@ ExitFlow is a complete Exit Checklist Approval Workflow tool for internal contro
 - [x] User Management screen: /admin/users with add/edit/deactivate, search & filter
 - [x] Excel bulk import for User Management: upload .xlsx/.xls, preview with row validation, import valid rows
 - [x] Multi-approver support per level: approverIds[] on ApprovalLevel, Any-One vs Consensus mode, admin UI at /admin/approval-levels, timeline shows per-approver status
+- [x] Department Tray with request claiming: /approvals/tray shows Department Queue and My Queue, Claim/Release buttons, only claimed approver can approve
 
 ## Current Structure
 
