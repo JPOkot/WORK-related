@@ -1,10 +1,10 @@
-# Active Context: Next.js Starter Template
+# Active Context: ExitFlow – Exit Checklist Approval Workflow MVP
 
 ## Current State
 
-**Template Status**: ✅ Ready for development
+**App Status**: ✅ Fully implemented MVP
 
-The template is a clean Next.js 16 starter with TypeScript and Tailwind CSS 4. It's ready for AI-assisted expansion to build any type of application.
+ExitFlow is a complete Exit Checklist Approval Workflow tool for internal control processes (banking/enterprise). Built on Next.js 16 + TypeScript + Tailwind CSS 4.
 
 ## Recently Completed
 
@@ -14,74 +14,72 @@ The template is a clean Next.js 16 starter with TypeScript and Tailwind CSS 4. I
 - [x] ESLint configuration
 - [x] Memory bank documentation
 - [x] Recipe system for common features
+- [x] Full Exit Checklist Approval Workflow MVP implementation
 
 ## Current Structure
 
 | File/Directory | Purpose | Status |
 |----------------|---------|--------|
-| `src/app/page.tsx` | Home page | ✅ Ready |
-| `src/app/layout.tsx` | Root layout | ✅ Ready |
-| `src/app/globals.css` | Global styles | ✅ Ready |
+| `src/app/page.tsx` | Dashboard with stats, recent requests, pending actions | ✅ Done |
+| `src/app/layout.tsx` | Root layout with Sidebar + AppProvider | ✅ Done |
+| `src/app/globals.css` | Global styles | ✅ Done |
+| `src/app/requests/page.tsx` | My Requests list with search/filter | ✅ Done |
+| `src/app/requests/new/page.tsx` | Create Exit Request (2-step form) | ✅ Done |
+| `src/app/requests/[id]/page.tsx` | Request Detail: Checklist, Approve/Reject, Timeline | ✅ Done |
+| `src/app/approvals/page.tsx` | Pending Approvals with level progress | ✅ Done |
+| `src/app/audit/page.tsx` | Immutable Audit Trail (approvals + checklist) | ✅ Done |
+| `src/components/layout/Sidebar.tsx` | Navigation sidebar with stats | ✅ Done |
+| `src/components/layout/TopBar.tsx` | Top bar with notification bell | ✅ Done |
+| `src/components/ui/StatusBadge.tsx` | Reusable status badge component | ✅ Done |
+| `src/components/ui/ApprovalTimeline.tsx` | Visual approval timeline | ✅ Done |
+| `src/lib/AppContext.tsx` | React context for global state | ✅ Done |
+| `src/lib/store.ts` | App state hook (simulates backend) | ✅ Done |
+| `src/lib/mockData.ts` | Mock data: users, requests, checklist, history | ✅ Done |
+| `src/lib/workflowEngine.ts` | Workflow logic, formatters, helpers | ✅ Done |
+| `src/types/index.ts` | TypeScript types for all data models | ✅ Done |
 | `.kilocode/` | AI context & recipes | ✅ Ready |
 
-## Current Focus
+## Application Features
 
-The template is ready. Next steps depend on user requirements:
+### Core Workflow
+- **5-level sequential approval**: Line Manager → HR → IT → Finance → Final Admin
+- **4 exit types**: Staff Exit, Vendor Offboarding, Project Closure, Change Closure
+- **Auto-populated checklists** based on exit type (15 items across 4 departments)
+- **Status lifecycle**: Draft → Pending L1-L5 → Completed / Rejected
 
-1. What type of application to build
-2. What features are needed
-3. Design/branding preferences
+### UI Screens
+1. **Dashboard** – Stats cards, recent requests, pending actions, status distribution
+2. **New Request** – 2-step form with exit type selection and checklist preview
+3. **My Requests** – Filterable table with search, status, and type filters
+4. **Request Detail** – Tabbed view: Checklist | Approve/Reject | Timeline
+5. **Pending Approvals** – Level progress visualization, overdue indicators
+6. **Audit Trail** – Immutable log of all approval decisions + checklist updates
 
-## Quick Start Guide
+### Security & Compliance (MVP)
+- Role-based access model (Initiator, Approver, Admin, Auditor)
+- IP address logging on all approval actions
+- Timestamp on every action
+- Immutable audit trail (no delete)
+- Mandatory item enforcement warnings
 
-### To add a new page:
+### Notifications
+- Bell icon with unread count
+- Dropdown with notification history
+- Triggered on: request created, approval, rejection, completion
 
-Create a file at `src/app/[route]/page.tsx`:
-```tsx
-export default function NewPage() {
-  return <div>New page content</div>;
-}
-```
+## Data Models
 
-### To add components:
-
-Create `src/components/` directory and add components:
-```tsx
-// src/components/ui/Button.tsx
-export function Button({ children }: { children: React.ReactNode }) {
-  return <button className="px-4 py-2 bg-blue-600 text-white rounded">{children}</button>;
-}
-```
-
-### To add a database:
-
-Follow `.kilocode/recipes/add-database.md`
-
-### To add API routes:
-
-Create `src/app/api/[route]/route.ts`:
-```tsx
-import { NextResponse } from "next/server";
-
-export async function GET() {
-  return NextResponse.json({ message: "Hello" });
-}
-```
-
-## Available Recipes
-
-| Recipe | File | Use Case |
-|--------|------|----------|
-| Add Database | `.kilocode/recipes/add-database.md` | Data persistence with Drizzle + SQLite |
-
-## Pending Improvements
-
-- [ ] Add more recipes (auth, email, etc.)
-- [ ] Add example components
-- [ ] Add testing setup recipe
+- `User` – userId, fullName, email, role, department, status
+- `ExitRequest` – requestId, employeeId, employeeName, exitType, status, currentLevel
+- `ChecklistItem` – itemId, itemName, departmentOwner, isMandatory, exitTypes
+- `ChecklistResponse` – per-request checklist item status (pending/cleared/N/A)
+- `ApprovalLevel` – 5 levels with SLA days
+- `ApprovalHistory` – immutable decision log with IP + timestamp
+- `Notification` – in-app notification system
 
 ## Session History
 
 | Date | Changes |
 |------|---------|
 | Initial | Template created with base setup |
+| 2026-03-04 | Full ExitFlow MVP implemented: 5-level approval workflow, 4 exit types, 6 screens, audit trail, notifications |
