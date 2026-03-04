@@ -47,6 +47,11 @@ export interface ExitRequest {
   status: RequestStatus;
   currentLevel: number;
   notes?: string;
+  /** User ID of the approver who has claimed this request.
+   *  When set, other approvers at the same level cannot see or act on it. */
+  claimedBy?: string | null;
+  /** Timestamp when the request was claimed */
+  claimedAt?: string | null;
 }
 
 // ============================================================

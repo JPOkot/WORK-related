@@ -110,6 +110,31 @@ export function useAppStore() {
     []
   );
 
+  // ---- Claim a request for personal queue ----
+  const claimRequest = useCallback(
+    (requestId: string, userId: string) => {
+      setRequests((prev) =>
+        prev.map((r) =>
+          r.requestId === requestId
+            ? { ...r, claimedBy: userId, claimedAt: new Date().toISOString() }
+            : r
+        )
+      );
+    },
+    []
+  );
+
+  // ---- Release a claim (return to department pool) ----
+  const releaseClaim = useCallback((requestId: string) => {
+    setRequests((prev) =>
+      prev.map((r) =>
+        r.requestId === requestId
+          ? { ...r, claimedBy: null, claimedAt: null }
+          : r
+      )
+    );
+  }, []);
+
   // ---- Submit approval decision ----
   const submitApproval = useCallback(
     (requestId: string, decision: ApprovalDecision, comment: string) => {
@@ -163,7 +188,7 @@ export function useAppStore() {
       setRequests((prev) =>
         prev.map((r) =>
           r.requestId === requestId
-            ? { ...r, status: newStatus, currentLevel: newLevel }
+            ? { ...r, status: newStatus, currentLevel: newLevel, claimedBy: null, claimedAt: null }
             : r
         )
       );
@@ -376,6 +401,8 @@ export function useAppStore() {
     createRequest,
     updateChecklistItem,
     submitApproval,
+    claimRequest,
+    releaseClaim,
     markNotificationRead,
     markAllNotificationsRead,
     getResponsesForRequest,

@@ -35,6 +35,8 @@ export default function RequestDetailPage() {
     currentUser,
     approvalLevels,
     users,
+    claimRequest,
+    releaseClaim,
   } = useApp();
 
   const request = requests.find((r) => r.requestId === requestId);
@@ -66,15 +68,24 @@ export default function RequestDetailPage() {
 
   const progress = getChecklistProgress(responses, items);
   const mandatoryCleared = areMandatoryItemsCleared(responses, items);
-  const canApprove =
-    request.status !== "completed" &&
-    request.status !== "rejected" &&
-    request.status !== "draft";
 
-  // Multi-approver: current level config
+  // Claim status (must be defined before canApprove uses it)
+  const isClaimed = !!request.claimedBy;
+  const isClaimedByMe = request.claimedBy === currentUser.userId;
   const currentLevelConfig = approvalLevels.find(
     (l) => l.levelId === `lvl${request.currentLevel}`
   );
+  const canClaim =
+    !isClaimed &&
+    currentLevelConfig?.approverIds.includes(currentUser.userId);
+
+  const canApprove =
+    request.status !== "completed" &&
+    request.status !== "rejected" &&
+    request.status !== "draft" &&
+    (isClaimedByMe || !isClaimed);
+
+  // Multi-approver: assigned approvers for this level
   const assignedApproverNames = currentLevelConfig
     ? getLevelApproverNames(currentLevelConfig, users)
     : [];
@@ -155,6 +166,36 @@ export default function RequestDetailPage() {
             </div>
             <div className="flex flex-col items-end gap-2">
               <StatusBadge status={request.status} />
+              
+              {/* Claim status */}
+              {isClaimed && (
+                <div className={`text-xs px-2 py-1 rounded-lg font-medium ${
+                  isClaimedByMe
+                    ? "bg-blue-100 text-blue-700"
+                    : "bg-orange-100 text-orange-700"
+                }`}>
+                  {isClaimedByMe ? "🔒 You have claimed this" : `🔒 Claimed by another approver`}
+                </div>
+              )}
+
+              {/* Claim/Release buttons */}
+              {canApprove && !isClaimed && (
+                <button
+                  onClick={() => claimRequest(requestId, currentUser.userId)}
+                  className="bg-orange-600 hover:bg-orange-700 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors"
+                >
+                  📥 Claim for My Queue
+                </button>
+              )}
+              {isClaimedByMe && (
+                <button
+                  onClick={() => releaseClaim(requestId)}
+                  className="text-gray-500 hover:text-gray-700 text-xs border border-gray-300 hover:bg-gray-50 px-3 py-1.5 rounded-lg transition-colors"
+                >
+                  Release Claim
+                </button>
+              )}
+
               <div className="text-right">
                 <p className="text-xs text-gray-500">Checklist Progress</p>
                 <p className="text-sm font-bold text-gray-900">
