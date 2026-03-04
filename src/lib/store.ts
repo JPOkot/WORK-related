@@ -41,6 +41,44 @@ export function useAppStore() {
   const [notifications, setNotifications] = useState<Notification[]>(MOCK_NOTIFICATIONS);
   const [users, setUsers] = useState<User[]>(MOCK_USERS);
   const [approvalLevels, setApprovalLevels] = useState<ApprovalLevel[]>(APPROVAL_LEVELS);
+  
+  // ---- Authentication State (LDAP simulation) ----
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+
+  // ---- LDAP Login (simulation) ----
+  const login = useCallback((ldapUser: { userId: string; fullName: string; email: string; role: UserRole; department: string }) => {
+    // Find or create user in our system
+    let user = users.find(u => u.email.toLowerCase() === ldapUser.email.toLowerCase());
+    if (!user) {
+      // Create new user from LDAP data
+      user = {
+        userId: ldapUser.userId,
+        fullName: ldapUser.fullName,
+        email: ldapUser.email,
+        role: ldapUser.role,
+        department: ldapUser.department,
+        status: "active" as const,
+      };
+      setUsers(prev => [...prev, user!]);
+    }
+    setCurrentUser(user);
+    setIsAuthenticated(true);
+  }, [users]);
+
+  // ---- Logout ----
+  const logout = useCallback(() => {
+    setCurrentUser(null);
+    setIsAuthenticated(false);
+  }, []);
+
+  // ---- Get current user or fallback to default for backward compatibility ----
+  const getCurrentUser = useCallback(() => {
+    return currentUser || CURRENT_USER;
+  }, [currentUser]);
+
+  // Helper to get current user for operations
+  const activeUser = currentUser || CURRENT_USER;
 
   // ---- Create new exit request ----
   const createRequest = useCallback(
@@ -55,10 +93,10 @@ export function useAppStore() {
       const newRequest: ExitRequest = {
         requestId: generateRequestId(),
         ...data,
-        initiatedBy: CURRENT_USER.userId,
+        initiatedBy: activeUser.userId,
         initiatedDate: new Date().toISOString(),
-        status: "pending_level_1",
-        currentLevel: 1,
+        status: "pending_manager_interview",
+        currentLevel: 0,
       };
 
       // Auto-populate checklist responses
@@ -77,9 +115,9 @@ export function useAppStore() {
       const notification: Notification = {
         notificationId: `n_${Date.now()}`,
         requestId: newRequest.requestId,
-        recipientId: CURRENT_USER.userId,
+        recipientId: activeUser.userId,
         type: "request_created",
-        message: `Exit request for ${data.employeeName} has been created and submitted for Level 1 approval.`,
+        message: `Exit request for ${data.employeeName} has been created and submitted for Manager 1-on-1 interview.`,
         sentDate: new Date().toISOString(),
         isRead: false,
       };
@@ -87,7 +125,7 @@ export function useAppStore() {
 
       return newRequest;
     },
-    []
+    [activeUser.userId]
   );
 
   // ---- Update checklist item status ----
@@ -100,7 +138,7 @@ export function useAppStore() {
                 ...r,
                 status,
                 comment: comment || r.comment,
-                updatedBy: CURRENT_USER.userId,
+                updatedBy: activeUser.userId,
                 updatedDate: new Date().toISOString(),
               }
             : r
@@ -150,8 +188,8 @@ export function useAppStore() {
         requestId,
         levelId,
         levelName: currentLevelConfig?.levelName ?? `Level ${request.currentLevel}`,
-        approvedBy: CURRENT_USER.userId,
-        approverName: CURRENT_USER.fullName,
+        approvedBy: activeUser.userId,
+        approverName: activeUser.fullName,
         decision,
         comment,
         decisionDate: new Date().toISOString(),
@@ -205,7 +243,7 @@ export function useAppStore() {
         decision === "rejected"
           ? `Exit request for ${request.employeeName} has been REJECTED at Level ${request.currentLevel}. Reason: ${comment}`
           : !advance
-          ? `${CURRENT_USER.fullName} approved exit request for ${request.employeeName} at Level ${request.currentLevel}. Waiting for remaining approvers.`
+          ? `${activeUser.fullName} approved exit request for ${request.employeeName} at Level ${request.currentLevel}. Waiting for remaining approvers.`
           : newStatus === "completed"
           ? `Exit request for ${request.employeeName} has been fully approved and COMPLETED.`
           : `Exit request for ${request.employeeName} approved at Level ${request.currentLevel}. Now pending Level ${newLevel} review.`;
@@ -396,7 +434,10 @@ export function useAppStore() {
     unreadNotifications,
     users,
     approvalLevels,
-    currentUser: CURRENT_USER,
+    currentUser: activeUser,
+    isAuthenticated,
+    login,
+    logout,
     allChecklistItems: CHECKLIST_ITEMS,
     createRequest,
     updateChecklistItem,
