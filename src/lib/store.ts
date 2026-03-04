@@ -2,6 +2,8 @@
 
 import { useState, useCallback } from "react";
 import type {
+  User,
+  UserRole,
   ExitRequest,
   ChecklistResponse,
   ApprovalHistory,
@@ -15,6 +17,7 @@ import {
   MOCK_CHECKLIST_RESPONSES,
   MOCK_APPROVAL_HISTORY,
   MOCK_NOTIFICATIONS,
+  MOCK_USERS,
   CURRENT_USER,
   CHECKLIST_ITEMS,
 } from "./mockData";
@@ -33,6 +36,7 @@ export function useAppStore() {
   const [checklistResponses, setChecklistResponses] = useState<ChecklistResponse[]>(MOCK_CHECKLIST_RESPONSES);
   const [approvalHistory, setApprovalHistory] = useState<ApprovalHistory[]>(MOCK_APPROVAL_HISTORY);
   const [notifications, setNotifications] = useState<Notification[]>(MOCK_NOTIFICATIONS);
+  const [users, setUsers] = useState<User[]>(MOCK_USERS);
 
   // ---- Create new exit request ----
   const createRequest = useCallback(
@@ -240,6 +244,41 @@ export function useAppStore() {
     };
   }, [requests]);
 
+  // ---- Add new user ----
+  const addUser = useCallback(
+    (data: { fullName: string; email: string; role: UserRole; department: string }) => {
+      const newUser: User = {
+        userId: `u${Date.now()}`,
+        ...data,
+        status: "active",
+      };
+      setUsers((prev) => [...prev, newUser]);
+      return newUser;
+    },
+    []
+  );
+
+  // ---- Update existing user ----
+  const updateUser = useCallback(
+    (userId: string, data: Partial<Pick<User, "fullName" | "email" | "role" | "department">>) => {
+      setUsers((prev) =>
+        prev.map((u) => (u.userId === userId ? { ...u, ...data } : u))
+      );
+    },
+    []
+  );
+
+  // ---- Toggle user active/inactive ----
+  const toggleUserStatus = useCallback((userId: string) => {
+    setUsers((prev) =>
+      prev.map((u) =>
+        u.userId === userId
+          ? { ...u, status: u.status === "active" ? "inactive" : "active" }
+          : u
+      )
+    );
+  }, []);
+
   const unreadNotifications = notifications.filter((n) => !n.isRead).length;
 
   return {
@@ -248,6 +287,7 @@ export function useAppStore() {
     approvalHistory,
     notifications,
     unreadNotifications,
+    users,
     currentUser: CURRENT_USER,
     allChecklistItems: CHECKLIST_ITEMS,
     createRequest,
@@ -259,5 +299,8 @@ export function useAppStore() {
     getHistoryForRequest,
     getItemsForRequest,
     getDashboardStats,
+    addUser,
+    updateUser,
+    toggleUserStatus,
   };
 }
