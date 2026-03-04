@@ -84,6 +84,9 @@ export const APPROVAL_LEVELS: ApprovalLevel[] = [
     roleRequired: "approver",
     department: "Any",
     slaDays: 2,
+    // Any approver from any department can act as line manager
+    approverIds: ["u007", "u002"],
+    requireAllApprovers: false,
   },
   {
     levelId: "lvl2",
@@ -92,6 +95,9 @@ export const APPROVAL_LEVELS: ApprovalLevel[] = [
     roleRequired: "approver",
     department: "Human Resources",
     slaDays: 3,
+    // Two HR approvers – either one can approve
+    approverIds: ["u007"],
+    requireAllApprovers: false,
   },
   {
     levelId: "lvl3",
@@ -100,6 +106,9 @@ export const APPROVAL_LEVELS: ApprovalLevel[] = [
     roleRequired: "approver",
     department: "IT",
     slaDays: 2,
+    // Single IT approver (can add more)
+    approverIds: ["u002"],
+    requireAllApprovers: false,
   },
   {
     levelId: "lvl4",
@@ -108,6 +117,9 @@ export const APPROVAL_LEVELS: ApprovalLevel[] = [
     roleRequired: "approver",
     department: "Finance",
     slaDays: 3,
+    // Single Finance approver
+    approverIds: ["u003"],
+    requireAllApprovers: false,
   },
   {
     levelId: "lvl5",
@@ -116,6 +128,9 @@ export const APPROVAL_LEVELS: ApprovalLevel[] = [
     roleRequired: "admin",
     department: "Administration",
     slaDays: 1,
+    // Admin approver
+    approverIds: ["u005"],
+    requireAllApprovers: false,
   },
 ];
 

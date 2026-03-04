@@ -84,6 +84,12 @@ export interface ApprovalLevel {
   roleRequired: string;
   department?: string;
   slaDays: number;
+  /** User IDs of all approvers assigned to this level.
+   *  Any one of them can approve to advance the workflow. */
+  approverIds: string[];
+  /** When true, ALL approvers must approve before advancing (consensus mode).
+   *  When false (default), any single approver can advance the workflow. */
+  requireAllApprovers?: boolean;
 }
 
 // ============================================================

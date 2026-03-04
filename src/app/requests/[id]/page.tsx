@@ -15,6 +15,8 @@ import {
   getChecklistProgress,
   areMandatoryItemsCleared,
   getDepartmentIcon,
+  getLevelApproverNames,
+  getPendingApprovers,
 } from "@/lib/workflowEngine";
 import type { ApprovalDecision } from "@/types";
 
@@ -31,6 +33,8 @@ export default function RequestDetailPage() {
     updateChecklistItem,
     submitApproval,
     currentUser,
+    approvalLevels,
+    users,
   } = useApp();
 
   const request = requests.find((r) => r.requestId === requestId);
@@ -66,6 +70,21 @@ export default function RequestDetailPage() {
     request.status !== "completed" &&
     request.status !== "rejected" &&
     request.status !== "draft";
+
+  // Multi-approver: current level config
+  const currentLevelConfig = approvalLevels.find(
+    (l) => l.levelId === `lvl${request.currentLevel}`
+  );
+  const assignedApproverNames = currentLevelConfig
+    ? getLevelApproverNames(currentLevelConfig, users)
+    : [];
+  const pendingApproverIds = currentLevelConfig
+    ? getPendingApprovers(currentLevelConfig, history)
+    : [];
+  const pendingApproverNames = pendingApproverIds.map((id) => {
+    const u = users.find((usr) => usr.userId === id);
+    return u ? u.fullName : id;
+  });
 
   const handleApprovalSubmit = async () => {
     if (!approvalComment.trim()) return;
@@ -376,6 +395,39 @@ export default function RequestDetailPage() {
                   )}
                 </div>
 
+                {/* Assigned Approvers for this level */}
+                {assignedApproverNames.length > 0 && (
+                  <div className="bg-blue-50 rounded-lg p-3 border border-blue-100">
+                    <p className="text-xs font-medium text-blue-700 mb-1.5">
+                      {currentLevelConfig?.requireAllApprovers
+                        ? "🔐 Consensus required – all approvers must approve"
+                        : "👥 Any one approver can advance this level"}
+                    </p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {assignedApproverNames.map((name) => {
+                        const isPending = pendingApproverNames.includes(name);
+                        return (
+                          <span
+                            key={name}
+                            className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                              isPending
+                                ? "bg-orange-100 text-orange-700"
+                                : "bg-green-100 text-green-700"
+                            }`}
+                          >
+                            {isPending ? "⏳" : "✓"} {name}
+                          </span>
+                        );
+                      })}
+                    </div>
+                    {currentLevelConfig?.requireAllApprovers && pendingApproverNames.length > 0 && (
+                      <p className="text-xs text-orange-600 mt-1.5">
+                        Waiting for {pendingApproverNames.length} more approver{pendingApproverNames.length > 1 ? "s" : ""} to act.
+                      </p>
+                    )}
+                  </div>
+                )}
+
                 {/* Approver Info */}
                 <div className="bg-gray-50 rounded-lg p-3 border border-gray-100">
                   <p className="text-xs text-gray-500 mb-1">Approving as:</p>
@@ -432,6 +484,8 @@ export default function RequestDetailPage() {
                 history={history}
                 currentLevel={request.currentLevel}
                 status={request.status}
+                approvalLevels={approvalLevels}
+                users={users}
               />
             </div>
           </div>

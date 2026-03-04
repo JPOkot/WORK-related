@@ -6,6 +6,7 @@ import type {
   ApprovalLevel,
   ChecklistItem,
   ExitType,
+  User,
 } from "@/types";
 import { APPROVAL_LEVELS, CHECKLIST_ITEMS } from "./mockData";
 
@@ -233,4 +234,73 @@ export function getDepartmentIcon(department: string): string {
     "Risk Management": "⚠️",
   };
   return icons[department] || "🏢";
+}
+
+// ============================================================
+// Multi-Approver Helpers
+// ============================================================
+
+/**
+ * Check whether a user is an assigned approver for a given level.
+ */
+export function isAssignedApprover(level: ApprovalLevel, userId: string): boolean {
+  return level.approverIds.includes(userId);
+}
+
+/**
+ * For a level that requires ALL approvers (consensus mode), check whether
+ * all assigned approvers have already submitted an "approved" decision.
+ */
+export function allApproversHaveApproved(
+  level: ApprovalLevel,
+  history: ApprovalHistory[]
+): boolean {
+  const levelHistory = history.filter(
+    (h) => h.levelId === level.levelId && h.decision === "approved"
+  );
+  const approvedIds = new Set(levelHistory.map((h) => h.approvedBy));
+  return level.approverIds.every((id) => approvedIds.has(id));
+}
+
+/**
+ * For a level that requires ALL approvers, return the list of approver IDs
+ * who have NOT yet submitted a decision.
+ */
+export function getPendingApprovers(
+  level: ApprovalLevel,
+  history: ApprovalHistory[]
+): string[] {
+  const actedIds = new Set(
+    history.filter((h) => h.levelId === level.levelId).map((h) => h.approvedBy)
+  );
+  return level.approverIds.filter((id) => !actedIds.has(id));
+}
+
+/**
+ * Determine whether the level is ready to advance (i.e., the workflow should
+ * move to the next level after an approval decision).
+ *
+ * - requireAllApprovers=false (default): any single approval advances the level.
+ * - requireAllApprovers=true: all assigned approvers must approve.
+ *
+ * Returns false if the decision is a rejection (rejections always stop the workflow).
+ */
+export function shouldAdvanceLevel(
+  level: ApprovalLevel,
+  decision: "approved" | "rejected",
+  historyAfterDecision: ApprovalHistory[]
+): boolean {
+  if (decision === "rejected") return false;
+  if (!level.requireAllApprovers) return true;
+  return allApproversHaveApproved(level, historyAfterDecision);
+}
+
+/**
+ * Get the display names of all assigned approvers for a level, given a user list.
+ */
+export function getLevelApproverNames(level: ApprovalLevel, users: User[]): string[] {
+  return level.approverIds.map((id) => {
+    const user = users.find((u) => u.userId === id);
+    return user ? user.fullName : id;
+  });
 }

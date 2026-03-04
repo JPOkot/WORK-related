@@ -7,6 +7,7 @@ import type {
   ExitRequest,
   ChecklistResponse,
   ApprovalHistory,
+  ApprovalLevel,
   Notification,
   RequestStatus,
   ApprovalDecision,
@@ -20,11 +21,13 @@ import {
   MOCK_USERS,
   CURRENT_USER,
   CHECKLIST_ITEMS,
+  APPROVAL_LEVELS,
 } from "./mockData";
 import {
   generateRequestId,
   getApplicableChecklistItems,
   getNextStatus,
+  shouldAdvanceLevel,
 } from "./workflowEngine";
 
 // ============================================================
@@ -37,6 +40,7 @@ export function useAppStore() {
   const [approvalHistory, setApprovalHistory] = useState<ApprovalHistory[]>(MOCK_APPROVAL_HISTORY);
   const [notifications, setNotifications] = useState<Notification[]>(MOCK_NOTIFICATIONS);
   const [users, setUsers] = useState<User[]>(MOCK_USERS);
+  const [approvalLevels, setApprovalLevels] = useState<ApprovalLevel[]>(APPROVAL_LEVELS);
 
   // ---- Create new exit request ----
   const createRequest = useCallback(
@@ -113,20 +117,14 @@ export function useAppStore() {
       if (!request) return;
 
       const levelId = `lvl${request.currentLevel}`;
-      const levelNames: Record<number, string> = {
-        1: "Line Manager",
-        2: "Human Resources",
-        3: "IT Department",
-        4: "Finance Department",
-        5: "Final Admin Approval",
-      };
+      const currentLevelConfig = approvalLevels.find((l) => l.levelId === levelId);
 
       // Add to approval history
       const historyEntry: ApprovalHistory = {
         approvalId: `ah_${Date.now()}`,
         requestId,
         levelId,
-        levelName: levelNames[request.currentLevel] || `Level ${request.currentLevel}`,
+        levelName: currentLevelConfig?.levelName ?? `Level ${request.currentLevel}`,
         approvedBy: CURRENT_USER.userId,
         approverName: CURRENT_USER.fullName,
         decision,
@@ -134,7 +132,16 @@ export function useAppStore() {
         decisionDate: new Date().toISOString(),
         ipAddress: "192.168.1.100", // simulated
       };
-      setApprovalHistory((prev) => [...prev, historyEntry]);
+
+      // We need the updated history (including this new entry) to evaluate
+      // whether all approvers have acted (for requireAllApprovers mode).
+      const updatedHistory = [...approvalHistory, historyEntry];
+      setApprovalHistory(updatedHistory);
+
+      // Determine whether the level should advance
+      const advance = currentLevelConfig
+        ? shouldAdvanceLevel(currentLevelConfig, decision, updatedHistory)
+        : decision === "approved";
 
       // Update request status
       let newStatus: RequestStatus;
@@ -142,9 +149,12 @@ export function useAppStore() {
 
       if (decision === "rejected") {
         newStatus = "rejected";
-      } else if (request.currentLevel >= 5) {
+      } else if (!advance) {
+        // Consensus mode: more approvers still needed – keep at current level
+        newStatus = request.status;
+      } else if (request.currentLevel >= approvalLevels.length) {
         newStatus = "completed";
-        newLevel = 5;
+        newLevel = request.currentLevel;
       } else {
         newLevel = request.currentLevel + 1;
         newStatus = getNextStatus(request.currentLevel) as RequestStatus;
@@ -159,24 +169,34 @@ export function useAppStore() {
       );
 
       // Add notification
-      const notifType = decision === "rejected" ? "rejected" : newStatus === "completed" ? "final_completion" : "approval_completed";
+      const notifType =
+        decision === "rejected"
+          ? "rejected"
+          : newStatus === "completed"
+          ? "final_completion"
+          : "approval_completed";
+
+      const message =
+        decision === "rejected"
+          ? `Exit request for ${request.employeeName} has been REJECTED at Level ${request.currentLevel}. Reason: ${comment}`
+          : !advance
+          ? `${CURRENT_USER.fullName} approved exit request for ${request.employeeName} at Level ${request.currentLevel}. Waiting for remaining approvers.`
+          : newStatus === "completed"
+          ? `Exit request for ${request.employeeName} has been fully approved and COMPLETED.`
+          : `Exit request for ${request.employeeName} approved at Level ${request.currentLevel}. Now pending Level ${newLevel} review.`;
+
       const notification: Notification = {
         notificationId: `n_${Date.now()}`,
         requestId,
         recipientId: request.initiatedBy,
         type: notifType,
-        message:
-          decision === "rejected"
-            ? `Exit request for ${request.employeeName} has been REJECTED at Level ${request.currentLevel}. Reason: ${comment}`
-            : newStatus === "completed"
-            ? `Exit request for ${request.employeeName} has been fully approved and COMPLETED.`
-            : `Exit request for ${request.employeeName} approved at Level ${request.currentLevel}. Now pending Level ${newLevel} review.`,
+        message,
         sentDate: new Date().toISOString(),
         isRead: false,
       };
       setNotifications((prev) => [notification, ...prev]);
     },
-    [requests]
+    [requests, approvalHistory, approvalLevels]
   );
 
   // ---- Mark notification as read ----
@@ -279,6 +299,39 @@ export function useAppStore() {
     );
   }, []);
 
+  // ---- Add approver to a level ----
+  const addApproverToLevel = useCallback((levelId: string, userId: string) => {
+    setApprovalLevels((prev) =>
+      prev.map((lvl) =>
+        lvl.levelId === levelId && !lvl.approverIds.includes(userId)
+          ? { ...lvl, approverIds: [...lvl.approverIds, userId] }
+          : lvl
+      )
+    );
+  }, []);
+
+  // ---- Remove approver from a level ----
+  const removeApproverFromLevel = useCallback((levelId: string, userId: string) => {
+    setApprovalLevels((prev) =>
+      prev.map((lvl) =>
+        lvl.levelId === levelId
+          ? { ...lvl, approverIds: lvl.approverIds.filter((id) => id !== userId) }
+          : lvl
+      )
+    );
+  }, []);
+
+  // ---- Toggle requireAllApprovers for a level ----
+  const toggleRequireAllApprovers = useCallback((levelId: string) => {
+    setApprovalLevels((prev) =>
+      prev.map((lvl) =>
+        lvl.levelId === levelId
+          ? { ...lvl, requireAllApprovers: !lvl.requireAllApprovers }
+          : lvl
+      )
+    );
+  }, []);
+
   // ---- Bulk import users (from Excel upload) ----
   // Skips rows whose email already exists; returns count of imported rows.
   const bulkImportUsers = useCallback(
@@ -317,6 +370,7 @@ export function useAppStore() {
     notifications,
     unreadNotifications,
     users,
+    approvalLevels,
     currentUser: CURRENT_USER,
     allChecklistItems: CHECKLIST_ITEMS,
     createRequest,
@@ -332,5 +386,8 @@ export function useAppStore() {
     updateUser,
     toggleUserStatus,
     bulkImportUsers,
+    addApproverToLevel,
+    removeApproverFromLevel,
+    toggleRequireAllApprovers,
   };
 }

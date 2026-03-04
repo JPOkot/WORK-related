@@ -12,10 +12,9 @@ import {
   isOverdue,
   getChecklistProgress,
 } from "@/lib/workflowEngine";
-import { APPROVAL_LEVELS } from "@/lib/mockData";
 
 export default function ApprovalsPage() {
-  const { requests, getResponsesForRequest, getItemsForRequest } = useApp();
+  const { requests, getResponsesForRequest, getItemsForRequest, approvalLevels } = useApp();
 
   const pendingRequests = requests.filter(
     (r) =>
@@ -98,7 +97,7 @@ export default function ApprovalsPage() {
                 const responses = getResponsesForRequest(req.requestId);
                 const items = getItemsForRequest(req.exitType);
                 const progress = getChecklistProgress(responses, items);
-                const currentLevelInfo = APPROVAL_LEVELS.find((l) => l.sequenceNo === req.currentLevel);
+                const currentLevelInfo = approvalLevels.find((l) => l.sequenceNo === req.currentLevel);
                 const overdue = isOverdue(req);
 
                 return (
@@ -138,7 +137,7 @@ export default function ApprovalsPage() {
 
                         {/* Approval Level Progress */}
                         <div className="flex items-center gap-2">
-                          {APPROVAL_LEVELS.map((level) => (
+                          {approvalLevels.map((level) => (
                             <div key={level.levelId} className="flex items-center gap-1">
                               <div
                                 className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
@@ -148,7 +147,7 @@ export default function ApprovalsPage() {
                                     ? "bg-blue-500 text-white ring-2 ring-blue-200"
                                     : "bg-gray-200 text-gray-500"
                                 }`}
-                                title={level.levelName}
+                                title={`${level.levelName} (${level.approverIds.length} approver${level.approverIds.length !== 1 ? "s" : ""})`}
                               >
                                 {level.sequenceNo < req.currentLevel ? (
                                   <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -158,7 +157,7 @@ export default function ApprovalsPage() {
                                   level.sequenceNo
                                 )}
                               </div>
-                              {level.sequenceNo < APPROVAL_LEVELS.length && (
+                              {level.sequenceNo < approvalLevels.length && (
                                 <div className={`w-4 h-0.5 ${level.sequenceNo < req.currentLevel ? "bg-green-300" : "bg-gray-200"}`} />
                               )}
                             </div>
