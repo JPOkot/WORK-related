@@ -16,6 +16,7 @@ ExitFlow is a complete Exit Checklist Approval Workflow tool for internal contro
 - [x] Recipe system for common features
 - [x] Full Exit Checklist Approval Workflow MVP implementation
 - [x] User Management screen: /admin/users with add/edit/deactivate, search & filter
+- [x] Excel bulk import for User Management: upload .xlsx/.xls, preview with row validation, import valid rows
 
 ## Current Structure
 
@@ -29,7 +30,7 @@ ExitFlow is a complete Exit Checklist Approval Workflow tool for internal contro
 | `src/app/requests/[id]/page.tsx` | Request Detail: Checklist, Approve/Reject, Timeline | ✅ Done |
 | `src/app/approvals/page.tsx` | Pending Approvals with level progress | ✅ Done |
 | `src/app/audit/page.tsx` | Immutable Audit Trail (approvals + checklist) | ✅ Done |
-| `src/app/admin/users/page.tsx` | User Management: table, add/edit modal, deactivate toggle | ✅ Done |
+| `src/app/admin/users/page.tsx` | User Management: table, add/edit modal, deactivate toggle, Excel bulk import | ✅ Done |
 | `src/components/layout/Sidebar.tsx` | Navigation sidebar with stats | ✅ Done |
 | `src/components/layout/TopBar.tsx` | Top bar with notification bell | ✅ Done |
 | `src/components/ui/StatusBadge.tsx` | Reusable status badge component | ✅ Done |
